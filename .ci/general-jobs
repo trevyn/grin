@@ -16,6 +16,9 @@
 
 # This script contains general jobs.
 
+echo $CI_JOB
+echo $CI_JOB_ARGS
+
 case "${CI_JOB}" in
     "test")
         for dir in ${CI_JOB_ARGS}; do
