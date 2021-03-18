@@ -26,6 +26,6 @@ jobs:
           - "pool p2p src"
           - "api util store"
     steps:
-      uses: actions/checkout@v2
-      env: {CI_ARGS: ${{ matrix.args }}}
-      run: .ci/general-jobs
+      - uses: actions/checkout@v2
+      - env: {CI_ARGS: ${{ matrix.args }}}
+      - run: .ci/general-jobs
