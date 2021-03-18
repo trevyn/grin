@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         args:
-          "servers"
-          "chain core keychain"
-          "pool p2p src"
-          "api util store"
+          - "servers"
+          - "chain core keychain"
+          - "pool p2p src"
+          - "api util store"
     steps:
       uses: actions/checkout@v2
       env: {CI_ARGS: ${{ matrix.args }}}
