@@ -1,6 +1,8 @@
 name: test
 on: [push, pull_request, workflow_dispatch]
-env: {CARGO_TERM_COLOR: always}
+env: 
+  CARGO_TERM_COLOR: always
+  CI_JOB: test
 jobs:
   test-windows:
     runs-on: windows-latest
