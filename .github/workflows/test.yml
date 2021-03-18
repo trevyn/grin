@@ -27,6 +27,6 @@ jobs:
           - "api util store"
     steps:
       - uses: actions/checkout@v2
-      - env:
-          CI_ARGS: ${{ matrix.args }}
       - run: .ci/general-jobs
+        env:
+          CI_ARGS: ${{ matrix.args }}
