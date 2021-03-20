@@ -322,8 +322,7 @@ fn comments() -> HashMap<String, String> {
 	retval.insert(
 		"accept_fee_base".to_string(),
 		"
-#base fee that's accepted into the pool
-#a setting to 1000000 will be overridden to 500000 to respect the fixfees RFC
+#base fee that is accepted into the pool
 "
 		.to_string(),
 	);
@@ -525,4 +524,15 @@ pub fn insert_comments(orig: String) -> String {
 		ret_val.push_str(&l);
 	}
 	ret_val
+}
+
+#[test]
+fn test_comments() {
+	// Ensure that no phrases that trigger special legacy behavior are newly inserted into the config file.
+	assert!(
+		comments()
+			.values()
+			.find(|s| s.contains("#base fee that's accepted into the pool"))
+			== None
+	);
 }

@@ -20,7 +20,6 @@ use std::env;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::io::Read;
 use std::path::PathBuf;
 
 use crate::comments::insert_comments;
@@ -222,22 +221,23 @@ impl GlobalConfig {
 
 	/// Read config
 	fn read_config(mut self) -> Result<GlobalConfig, ConfigError> {
-		let mut file = File::open(self.config_file_path.as_mut().unwrap())?;
-		let mut contents = String::new();
-		file.read_to_string(&mut contents)?;
-		let fixed = GlobalConfig::fix_warning_level(contents);
+		let config_file_path = self.config_file_path.as_ref().unwrap();
+		let contents = fs::read_to_string(config_file_path)?;
+		let fixed = GlobalConfig::fix_accept_fee_base(contents.clone());
+		if contents != fixed {
+			fs::write(config_file_path, &fixed)?;
+		}
+		let fixed = GlobalConfig::fix_warning_level(fixed);
 		let decoded: Result<ConfigMembers, toml::de::Error> = toml::from_str(&fixed);
 		match decoded {
 			Ok(gc) => {
 				self.members = Some(gc);
-				return Ok(self);
+				Ok(self)
 			}
-			Err(e) => {
-				return Err(ConfigError::ParseError(
-					self.config_file_path.unwrap().to_str().unwrap().to_string(),
-					format!("{}", e),
-				));
-			}
+			Err(e) => Err(ConfigError::ParseError(
+				config_file_path.to_str().unwrap().to_string(),
+				format!("{}", e),
+			)),
 		}
 	}
 
@@ -305,6 +305,23 @@ impl GlobalConfig {
 		Ok(())
 	}
 
+	// Change to the new default accept_fee_base if the old default has not been modified, per issue #3540. The old comment phrasing is used to trigger the update behavior, and that phrasing is banned via assert from being used in the future.
+	fn fix_accept_fee_base(conf: String) -> String {
+		match conf.contains("#base fee that's accepted into the pool") {
+			true => conf
+				.replace(
+					"#base fee that's accepted into the pool",
+					"#base fee that is accepted into the pool",
+				)
+				.replace(
+					"#a setting to 1000000 will be overridden to 500000 to respect the fixfees RFC\n",
+					"",
+				)  
+    .replace("accept_fee_base = 1000000", "accept_fee_base = 500000"),
+			false => conf,
+		}
+	}
+
 	// For forwards compatibility old config needs `Warning` log level changed to standard log::Level `WARN`
 	fn fix_warning_level(conf: String) -> String {
 		conf.replace("Warning", "WARN")
@@ -332,4 +349,37 @@ fn test_fix_warning_level() {
 	let config = "Warning".to_string();
 	let fixed_config = GlobalConfig::fix_warning_level(config);
 	assert_eq!(fixed_config, "WARN");
+}
+
+#[test]
+fn test_fix_accept_fee_base() {
+	// legacy phrasing, override
+	let config = "#base fee that's accepted into the pool
+#a setting to 1000000 will be overridden to 500000 to respect the fixfees RFC
+accept_fee_base = 1000000"
+		.to_string();
+	let fixed_config = GlobalConfig::fix_accept_fee_base(config);
+	assert_eq!(
+		fixed_config,
+		"#base fee that is accepted into the pool
+accept_fee_base = 500000"
+	);
+
+	// legacy phrasing, override
+	let config = "#base fee that's accepted into the pool
+accept_fee_base = 1000000"
+		.to_string();
+	let fixed_config = GlobalConfig::fix_accept_fee_base(config);
+	assert_eq!(
+		fixed_config,
+		"#base fee that is accepted into the pool
+accept_fee_base = 500000"
+	);
+
+	// new phrasing, don't do any fixup
+	let config = "#base fee that is accepted into the pool
+accept_fee_base = 1000000"
+		.to_string();
+	let fixed_config = GlobalConfig::fix_accept_fee_base(config.clone());
+	assert_eq!(fixed_config, config);
 }
