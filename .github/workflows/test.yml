@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: choco install -y llvm
-      - run: refreshenv && cargo test --all
+      - run: refreshenv && ROARING_ARCH=x86-64-v2 cargo test --all
         env:
           LIBCLANG_PATH: C:\Program Files\LLVM\lib
           LLVM_CONFIG_PATH: C:\Program Files\LLVM\bin\llvm-config
@@ -17,7 +17,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cargo test --all
+      - run: ROARING_ARCH=x86-64-v2 cargo test --all
   test-linux:
     runs-on: ubuntu-latest
     strategy:
@@ -30,6 +30,6 @@ jobs:
           - "api util store"
     steps:
       - uses: actions/checkout@v2
-      - run: .ci/general-jobs
+      - run: ROARING_ARCH=x86-64-v2 .ci/general-jobs
         env:
           CI_JOB_ARGS: ${{ matrix.args }}
